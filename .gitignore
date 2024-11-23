@@ -1,4 +1,1 @@
-papers/*
-arxiv-metadata-oai-snapshot.json
-archive.zip
-cl_cv_papers_with_liwc_features.csv
+data/*
