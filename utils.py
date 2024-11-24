@@ -2,12 +2,13 @@ import collections as coll
 import math
 import pickle
 import string
+import argparse
+from IPython import embed
 from collections import defaultdict
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import style
-from nltk.corpus import cmudict
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 from sklearn.cluster import KMeans
@@ -16,26 +17,8 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import nltk
 
-nltk.download("cmudict")
-nltk.download("stopwords")
-
-style.use("ggplot")
-cmuDictionary = None
 
 ## similarity metrics
-
-
-def n_gram_similarity(text_1, text_2, n=1):
-    text_1 = text_1.lower()
-    text_2 = text_2.lower()
-    text_1 = text_1.split()
-    text_2 = text_2.split()
-    n_grams_text_1 = set(zip(*[text_1[i:] for i in range(n)]))
-    n_grams_text_2 = set(zip(*[text_2[i:] for i in range(n)]))
-
-    return len(n_grams_text_1.intersection(n_grams_text_2)) / len(
-        n_grams_text_1.union(n_grams_text_2)
-    )
 
 
 def get_liwc_dictionary():
@@ -62,6 +45,9 @@ def get_liwc_dictionary():
     return liwc_dict, LIWC_CATEGORIES_DICT
 
 
+liwc_dict, LIWC_CATEGORIES_DICT = get_liwc_dictionary()
+
+
 def add_liwc_features(input_df, input_text_column, liwc_dict, LIWC_CATEGORIES_DICT):
     print("Adding LIWC features")
     output_df = input_df.copy()
@@ -69,7 +55,7 @@ def add_liwc_features(input_df, input_text_column, liwc_dict, LIWC_CATEGORIES_DI
     liwc_features_dict = defaultdict(list)
     for _, row in tqdm(output_df.iterrows(), leave=False, total=len(output_df)):
         try:
-            text = row[input_text_column]
+            text = row[input_text_column].lower()
             text = f" {text} "
             text_length = len(text.split())
             for category in LIWC_CATEGORIES_DICT.values():
@@ -595,8 +581,10 @@ def compute_all_features_for_df(df, text_column):
 
     features_df = pd.DataFrame(features)
     features_df["abstract"] = df["abstract"]
+    for col in df:
+        if col not in features_df:
+            features_df[col] = df[col]
     # add liwc features
-    liwc_dict, LIWC_CATEGORIES_DICT = get_liwc_dictionary()
     features_df = add_liwc_features(
         features_df, text_column, liwc_dict, LIWC_CATEGORIES_DICT
     )
@@ -608,42 +596,147 @@ from profiling_decorator import profile
 
 
 @profile
-def process_papers():
+def process_papers_for_features():
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
-    # small subset
-    # df = df.sample(100)
     features_df = compute_all_features_for_df(df, "abstract")
     features_df.to_csv("data/papers/cl_cv_papers_features.csv", index=False)
 
 
+def test_process_papers_for_features():
+
+    liwc_test_texts = {
+        "Emotion and Affect": "I am thrilled to announce my promotion! However, I feel a bit anxious about the new challenges ahead.",
+        "Social Processes": "We met our friends at the park, and everyone had a great time talking and laughing.",
+        "Cognitive Processes": "I think the solution is correct, but I’m unsure if the method aligns with the instructions.",
+        "Temporal Focus": "Yesterday was exhausting, but today feels manageable. I hope tomorrow brings more energy.",
+        "Biological and Health Concerns": "My headache is unbearable, and I need some rest. Hopefully, drinking water will help.",
+    }
+
+    df = pd.DataFrame(
+        {
+            "abstract": list(liwc_test_texts.values()),
+            "label": list(liwc_test_texts.keys()),
+        }
+    )
+    features_df = compute_all_features_for_df(df, "abstract")
+    embed()
+    exit()
+
+
+def n_gram_similarity_over_liwc_words(text_1, text_2):
+    embed()
+    exit()
+
+
+def n_gram_similarity(text_1, text_2, n=1):
+    text_1 = text_1.split()
+    text_2 = text_2.split()
+    n_grams_text_1 = set(zip(*[text_1[i:] for i in range(n)]))
+    n_grams_text_2 = set(zip(*[text_2[i:] for i in range(n)]))
+
+    return len(n_grams_text_1.intersection(n_grams_text_2)) / len(
+        n_grams_text_1.union(n_grams_text_2)
+    )
+
+
+def compute_similarities_in_group(group, texts):
+    print(f"Computing similarities for group {group}")
+    import string
+
+    clean_texts = []
+
+    for text in texts:
+        clean_text = text
+        # remove all punctuation and put space in place of it
+        clean_text = clean_text.translate(
+            str.maketrans(string.punctuation, " " * len(string.punctuation))
+        )
+        clean_text = clean_text.replace("\n", " ")
+        # remove extra spaces
+        clean_text = " ".join(clean_text.split())
+        clean_text = clean_text.lower()
+        clean_texts.append(clean_text)
+
+    # using the n_gram_similarity function, parallelize the computation and compute the similarity between all pairs of texts
+    similarities_dict = {}
+    for i in tqdm(range(len(clean_texts)), leave=False):
+        for j in tqdm(range(i + 1, len(clean_texts)), leave=False):
+            similarities_dict[(i, j)] = n_gram_similarity(
+                clean_texts[i], clean_texts[j]
+            )
+    final_object = {
+        "texts": texts,
+        "clean_texts": clean_texts,
+        "similarities": similarities_dict,
+    }
+    return final_object
+
+
+def process_papers_n_gram_similarities_per_month():
+    df = pd.read_csv("data/papers/cl_cv_papers.csv")
+    df["final_date"] = pd.to_datetime(df["update_date"])
+
+    # Set up multiprocessing pool
+    import multiprocessing
+
+    print("Starting n-gram similarity processing...")
+
+    # Group by month and year
+    grouped = df.groupby([df["final_date"].dt.year, df["final_date"].dt.month])
+
+    # Create list of text groups to process
+    text_groups = [(name, group["abstract"].tolist()) for name, group in grouped]
+    print(f"Found {len(text_groups)} month-year groups to process")
+    # show the mean, min and max of the entities in each group
+    print("Min entities in a group:", min([len(g[1]) for g in text_groups]))
+    print("Max entities in a group:", max([len(g[1]) for g in text_groups]))
+    print("Mean entities in a group:", np.mean([len(g[1]) for g in text_groups]))
+    print("Median entities in a group:", np.median([len(g[1]) for g in text_groups]))
+    # for testing, limit the text_groups to only a few in each group
+    # text_groups = [(name, group[:10]) for name, group in text_groups]
+    # for the groups that have more than 1000, sample 1000
+    text_groups = [
+        (
+            (name, np.random.choice(group, 1000, replace=False))
+            if len(group) > 1000
+            else (name, group)
+        )
+        for name, group in text_groups
+    ]
+
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+
+    # Process groups in parallel and store results
+    results = {}
+    for name, similarities in zip(
+        [g[0] for g in text_groups],
+        pool.starmap(compute_similarities_in_group, text_groups),
+    ):
+        year, month = name
+        print(
+            f"Finished processing year {year}, month {month} with number of entities {len(similarities['texts'])}"
+        )
+        results[name] = similarities
+
+    pool.close()
+    pool.join()
+
+    print("Completed processing all month-year groups")
+    embed()
+    exit()
+
+
 if __name__ == "__main__":
 
-    process_papers()
-    # # Example texts with varying richness and readability
-    # examples = {
-    #     "Simple Text": "The cat sat on the mat. The dog barked. It was a sunny day.",
-    #     "Moderate Richness": (
-    #         "A feline reclined lazily upon the rug, basking in the warmth of the sun. "
-    #         "Nearby, a canine emitted a sharp bark, breaking the tranquil atmosphere."
-    #     ),
-    #     "High Richness": (
-    #         "An exquisite tabby luxuriated atop the intricately woven Persian carpet, "
-    #         "soaking up golden sunbeams filtering through the gossamer curtains. "
-    #         "In stark contrast, a spirited terrier issued an abrupt and piercing bark, "
-    #         "shattering the serene ambiance."
-    #     ),
-    #     "Technical Text": (
-    #         "The aqueous solution was heated to 100°C, initiating a phase transition "
-    #         "from liquid to vapor, as described by the Clausius-Clapeyron relation."
-    #     ),
-    #     "Child-Friendly Text": (
-    #         "The little bunny hopped and hopped. He saw a butterfly and smiled. The world was happy and fun!"
-    #     ),
-    # }
-    # # Extract features for each example text
-    # features = {name: FeatureExtration(text) for name, text in examples.items()}
-    # features_df = pd.DataFrame(features).T
-    # from IPython import embed
+    parser = argparse.ArgumentParser()
 
-    # embed()
-    # exit()
+    parser.add_argument(
+        "--process", type=str, required=True, help="process papers for features"
+    )
+
+    args = parser.parse_args()
+
+    if args.process == "papers_featurization":
+        process_papers_for_features()
+    elif args.process == "papers_ngram_sim":
+        process_papers_n_gram_similarities_per_month()
