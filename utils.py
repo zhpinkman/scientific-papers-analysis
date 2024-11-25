@@ -1,9 +1,13 @@
 import collections as coll
 import math
+from collections import Counter, defaultdict
 import pickle
 import string
+from spacy import displacy
 import argparse
+import json
 from IPython import embed
+from bs4 import BeautifulSoup
 from collections import defaultdict
 from tqdm.auto import tqdm
 import matplotlib.pyplot as plt
@@ -16,6 +20,12 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import nltk
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+
+# Set up multiprocessing pool
+import multiprocessing
 
 
 ## similarity metrics
@@ -46,30 +56,60 @@ def get_liwc_dictionary():
 
 
 liwc_dict, LIWC_CATEGORIES_DICT = get_liwc_dictionary()
+ALL_LIWC_WORDS_SET = set(
+    [word.replace("*", "") for values in liwc_dict.values() for word in values]
+)
 
 
-def add_liwc_features(input_df, input_text_column, liwc_dict, LIWC_CATEGORIES_DICT):
+def filter_text_based_on_liwc(text, liwc_dict, LIWC_CATEGORIES_DICT):
+    text_words = set(text.split())
+    filtered_text = text_words.intersection(ALL_LIWC_WORDS_SET)
+    return filtered_text
+
+
+def process_category(category, texts):
+    print(f"Processing category {category}")
+    category_counts = []
+    for text in texts:
+        try:
+            text = f" {text} "
+            text_length = len(text.split())
+            count = 0
+            for word in liwc_dict[category]:
+                if word.endswith("*"):
+                    count += text.count(f" {word[:-1]}")
+                else:
+                    count += text.count(f" {word} ")
+            category_counts.append(count / text_length)
+        except Exception as e:
+            print(e)
+            category_counts.append(np.nan)
+    return category, category_counts
+
+
+def add_liwc_features(input_df, input_text_column, LIWC_CATEGORIES_DICT):
     print("Adding LIWC features")
     output_df = input_df.copy()
 
+    # Get all texts upfront
+    texts = [row[input_text_column].lower() for _, row in output_df.iterrows()]
+
+    # Create pool and process categories in parallel
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+
+    # Map each category to be processed in parallel
+    results = pool.starmap(
+        process_category,
+        [(cat, texts) for cat in LIWC_CATEGORIES_DICT.values()],
+    )
+
+    pool.close()
+    pool.join()
+
+    # Combine results into features dict
     liwc_features_dict = defaultdict(list)
-    for _, row in tqdm(output_df.iterrows(), leave=False, total=len(output_df)):
-        try:
-            text = row[input_text_column].lower()
-            text = f" {text} "
-            text_length = len(text.split())
-            for category in LIWC_CATEGORIES_DICT.values():
-                count = 0
-                for word in liwc_dict[category]:
-                    if word.endswith("*"):
-                        count += text.count(f" {word[:-1]}")
-                    else:
-                        count += text.count(f" {word} ")
-                liwc_features_dict[category].append(count / text_length)
-        except Exception as e:
-            print(e)
-            for category in LIWC_CATEGORIES_DICT.values():
-                liwc_features_dict[category].append(np.nan)
+    for category, counts in results:
+        liwc_features_dict[category] = counts
 
     for category in LIWC_CATEGORIES_DICT.values():
         output_df[f"liwc_{category}"] = liwc_features_dict[category]
@@ -413,6 +453,13 @@ def typeTokenRatio(text):
     return len(set(words)) / len(words)
 
 
+def get_lexical_density(text):
+    num_functional_words = CountFunctionalWords(text)
+    num_words = len(RemoveSpecialCHs(text))
+    num_content_words = num_words - num_functional_words
+    return num_content_words / num_words
+
+
 ### Vocabulary Richness
 # --------------------------------------------------------------------------
 # logW = V-a/log(N)
@@ -531,6 +578,144 @@ def SimpsonsIndex(text):
 #     return G
 
 
+def compute_avg_dependency_link_length(text):
+    doc = nlp(text)
+    words_to_indices = {token.text: token.i for token in doc}
+    link_lengths = []
+    for sent in doc.sents:
+        sent_link_lengths = []
+        for token in sent:
+            if token.dep_ != "ROOT":
+                head = token.head
+                sent_link_lengths.append(
+                    abs(words_to_indices[head.text] - words_to_indices[token.text])
+                )
+        if sent_link_lengths:  # Only append if sentence had any links
+            link_lengths.append(np.mean(sent_link_lengths))
+    return np.mean(link_lengths)
+
+
+def find_depth(token):
+    if not list(token.children):  # If no children, the depth is 1
+        return 1
+    return 1 + max(find_depth(child) for child in token.children)
+
+
+def find_deepest_trajectory(token):
+    """
+    Recursive helper function to find the trajectory of the deepest connection in a subtree.
+
+    Parameters:
+        token (spacy.tokens.Token): The root of the subtree.
+
+    Returns:
+        tuple: (depth, trajectory) where
+            depth (int): Depth of the deepest subtree.
+            trajectory (list): Tokens along the deepest path.
+    """
+    if not list(token.children):  # If no children, the depth is 1
+        return 1, [token]
+    # Get the deepest trajectory from the children
+    child_depths = [find_deepest_trajectory(child) for child in token.children]
+    max_depth, deepest_trajectory = max(child_depths, key=lambda x: x[0])
+    return 1 + max_depth, [token] + deepest_trajectory
+
+
+def compute_sentence_depth(text):
+    doc = nlp(text)
+    depths = []
+    for sent in doc.sents:
+        root = [token for token in sent if token.head == token][0]
+        depth = find_depth(root)
+        depths.append(depth)
+    return np.mean(depths)
+
+
+def get_pos_information(text):
+    # Load the SpaCy model
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(text)
+
+    # Extract UD POS tags for each token
+    pos_tags = [token.pos_ for token in doc]
+
+    # Count the frequency of each POS tag
+    pos_distribution = dict(Counter(pos_tags))
+
+    # Extract named entities
+    ner_tags = [ent.label_ for ent in doc.ents]
+    ner_distribution = dict(Counter(ner_tags))
+
+    return {"pos": pos_distribution, "ner": ner_distribution}
+
+
+def test_get_pos_information():
+    test_texts = [
+        "I am thrilled to announce my promotion! However, I feel a bit anxious about the new challenges ahead.",
+        "We met our friends at the park, and everyone had a great time talking and laughing.",
+        "I think the solution is correct, but I’m unsure if the method aligns with the instructions.",
+        "Yesterday was exhausting, but today feels manageable. I hope tomorrow brings more energy.",
+        "My headache is unbearable, and I need some rest. Hopefully, drinking water will help.",
+        # something with more proper nouns or company names or something like
+        "I work at Google and I am happy to announce that we have launched a new product.",
+        "James and Mary went to the park and had a great time.",
+    ]
+    for text in test_texts:
+        print("Text:", text)
+        print(get_pos_information(text))
+        print("-" * 50)
+
+
+def test_compute_sentence_depth():
+    sample_texts = [
+        "This is a sentence.",
+        "I am thrilled to announce my promotion! However, I feel a bit anxious about the new challenges ahead.",
+        "We met our friends at the park, and everyone had a great time talking and laughing.",
+        "I think the solution is correct, but I’m unsure if the method aligns with the instructions.",
+        "Yesterday was exhausting, but today feels manageable. I hope tomorrow brings more energy.",
+        "My headache is unbearable, and I need some rest. Hopefully, drinking water will help.",
+    ]
+    doc = nlp(sample_texts[-1])
+    embed()
+    exit()
+    # find the maximum number of hops from a root to a leaf
+    max_depth = 0
+    root = [token for token in doc if token.head == token][0]
+    _, trajectory = find_deepest_trajectory(root)
+    max_depth = find_depth(root)
+    print("Max Depth:", max_depth)
+
+    trajectory_tokens = [token.text for token in trajectory]
+    print(f"Deepest trajectory: {' -> '.join(trajectory_tokens)}")
+
+    displacy.serve(doc, style="dep", auto_select_port=True)
+
+
+def test_process_syntactical_information():
+    sample_texts = [
+        "I am thrilled to announce my promotion! However, I feel a bit anxious about the new challenges ahead.",
+        "We met our friends at the park, and everyone had a great time talking and laughing.",
+        "I think the solution is correct, but I’m unsure if the method aligns with the instructions.",
+        "Yesterday was exhausting, but today feels manageable. I hope tomorrow brings more energy.",
+        "My headache is unbearable, and I need some rest. Hopefully, drinking water will help.",
+    ]
+
+    # get the dependency tree from the sample_texts[0] using spacy
+
+    doc = nlp(sample_texts[0])
+    for token in doc:
+        print(
+            token.text,
+            token.dep_,
+            token.head.text,
+            token.head.pos_,
+            [child for child in token.children],
+        )
+
+    embed()
+    exit()
+
+
 # returns a feature vector of text
 def FeatureExtration(text):
     # cmu dictionary for syllables
@@ -547,6 +732,14 @@ def FeatureExtration(text):
     vector["lex_special_char_count"] = countSpecialCharacter(text)
     vector["lex_punctuation_count"] = countPuncuation(text)
     vector["lex_functional_words_count"] = CountFunctionalWords(text)
+    vector["lex_lexical_density"] = get_lexical_density(text)
+    vector["lex_avg_dependency_link_length"] = compute_avg_dependency_link_length(text)
+    vector["lex_sentence_depth"] = compute_sentence_depth(text)
+    pos_ner_information = get_pos_information(text)
+    for pos_tag, count in pos_ner_information["pos"].items():
+        vector[f"lex_pos_{pos_tag}"] = count
+    for ner_tag, count in pos_ner_information["ner"].items():
+        vector[f"lex_ner_{ner_tag}"] = count
 
     # VOCABULARY RICHNESS FEATURES
     vector["voc_type_token_ratio"] = typeTokenRatio(text)
@@ -575,19 +768,34 @@ def FeatureExtration(text):
 
 def compute_all_features_for_df(df, text_column):
     features = []
-    for _, row in tqdm(df.iterrows(), total=len(df)):
-        text = row[text_column].lower()
-        features.append(FeatureExtration(text))
+    # remove rows that are empty
+    df = df.dropna(subset=[text_column])
+    df = df[df[text_column].apply(lambda x: len(x) > 0)]
+    # Create pool and process texts in parallel
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+
+    # Convert df to list of texts for parallel processing
+    texts = [row[text_column].lower() for _, row in df.iterrows()]
+
+    # Process texts in parallel and collect features
+    features = list(
+        tqdm(
+            pool.imap(FeatureExtration, texts),
+            total=len(texts),
+            desc="Extracting features",
+        )
+    )
+
+    pool.close()
+    pool.join()
 
     features_df = pd.DataFrame(features)
-    features_df["abstract"] = df["abstract"]
+    features_df[text_column] = df[text_column]
     for col in df:
         if col not in features_df:
             features_df[col] = df[col]
     # add liwc features
-    features_df = add_liwc_features(
-        features_df, text_column, liwc_dict, LIWC_CATEGORIES_DICT
-    )
+    features_df = add_liwc_features(features_df, text_column, LIWC_CATEGORIES_DICT)
 
     return features_df
 
@@ -600,6 +808,23 @@ def process_papers_for_features():
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
     features_df = compute_all_features_for_df(df, "abstract")
     features_df.to_csv("data/papers/cl_cv_papers_features.csv", index=False)
+
+
+@profile
+def process_news_for_features():
+    with open("data/news/[tagged-zip]patchData.news.json") as f:
+        data = json.load(f)
+        f.close()
+
+    # use beautiful soup to only get the content of the texts
+    texts = [
+        BeautifulSoup(d["body"], "html.parser").get_text()
+        for d in tqdm(data, leave=False)
+    ]
+
+    df = pd.DataFrame({"text": texts})
+    features_df = compute_all_features_for_df(df, "text")
+    features_df.to_csv("data/news/news_features.csv", index=False)
 
 
 def test_process_papers_for_features():
@@ -623,9 +848,11 @@ def test_process_papers_for_features():
     exit()
 
 
-def n_gram_similarity_over_liwc_words(text_1, text_2):
-    embed()
-    exit()
+def one_gram_similarity_over_liwc_words(text_1, text_2):
+    text_1 = text_1.split()
+    text_2 = text_2.split()
+    text_1_liwc = set(text_1).intersection(set(liwc_dict.keys()))
+    text_2_liwc = set(text_2).intersection(set(liwc_dict.keys()))
 
 
 def n_gram_similarity(text_1, text_2, n=1):
@@ -661,9 +888,12 @@ def compute_similarities_in_group(group, texts):
     similarities_dict = {}
     for i in tqdm(range(len(clean_texts)), leave=False):
         for j in tqdm(range(i + 1, len(clean_texts)), leave=False):
-            similarities_dict[(i, j)] = n_gram_similarity(
-                clean_texts[i], clean_texts[j]
-            )
+            try:
+                similarities_dict[(i, j)] = n_gram_similarity(
+                    clean_texts[i], clean_texts[j]
+                )
+            except Exception as e:
+                similarities_dict[(i, j)] = np.nan
     final_object = {
         "texts": texts,
         "clean_texts": clean_texts,
@@ -672,12 +902,89 @@ def compute_similarities_in_group(group, texts):
     return final_object
 
 
+def compute_n_gram_similarities_per_month(text_groups):
+
+    processed_text_groups = []
+    for name, group in text_groups:
+        if len(group) < 2000:
+            processed_text_groups.append((name, group))
+        else:
+            np.random.seed(42)
+            processed_text_groups.append(
+                (
+                    name,
+                    np.random.choice(
+                        group,
+                        2000,
+                        replace=False,
+                    ).tolist(),
+                )
+            )
+
+    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
+
+    # Process groups in parallel and store results
+    results = {}
+    for name, similarities in zip(
+        [g[0] for g in processed_text_groups],
+        pool.starmap(compute_similarities_in_group, processed_text_groups),
+    ):
+        year, month = name
+        print(
+            f"Finished processing year {year}, month {month} with number of entities {len(similarities['texts'])}"
+        )
+        results[f"{name[0]}_{name[1]}"] = similarities
+
+    pool.close()
+    pool.join()
+
+    print("Completed processing all month-year groups")
+
+    return results
+
+
+def process_news_n_gram_similarities_per_month():
+    with open("data/news/[tagged-zip]patchData.news.json") as f:
+        data = json.load(f)
+        f.close()
+
+    # use beautiful soup to only get the content of the texts
+    texts = [
+        BeautifulSoup(d["body"], "html.parser").get_text()
+        for d in tqdm(data, leave=False)
+    ]
+
+    # Group by month and year
+    # based on "updated": "2023-10-20T14:43:37Z"
+    update_times_months = [int(d["updated"][5:7]) for d in data]
+    update_times_years = [int(d["updated"][:4]) for d in data]
+    text_groups_df = pd.DataFrame(
+        {
+            "text": texts,
+            "update_time_year": update_times_years,
+            "update_time_month": update_times_months,
+        }
+    )
+    grouped = text_groups_df.groupby(["update_time_year", "update_time_month"])
+
+    # Create list of text groups to process
+    text_groups = [(name, group["text"].tolist()) for name, group in grouped]
+    print(f"Found {len(text_groups)} month-year groups to process")
+
+    print("Min entities in a group:", min([len(g[1]) for g in text_groups]))
+    print("Max entities in a group:", max([len(g[1]) for g in text_groups]))
+    print("Mean entities in a group:", np.mean([len(g[1]) for g in text_groups]))
+    print("Median entities in a group:", np.median([len(g[1]) for g in text_groups]))
+
+    # for the groups that have more than 1000, sample 1000
+    results = compute_n_gram_similarities_per_month(text_groups)
+
+    np.save("data/news/news_n_gram_similarities.npy", results)
+
+
 def process_papers_n_gram_similarities_per_month():
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
     df["final_date"] = pd.to_datetime(df["update_date"])
-
-    # Set up multiprocessing pool
-    import multiprocessing
 
     print("Starting n-gram similarity processing...")
 
@@ -695,35 +1002,9 @@ def process_papers_n_gram_similarities_per_month():
     # for testing, limit the text_groups to only a few in each group
     # text_groups = [(name, group[:10]) for name, group in text_groups]
     # for the groups that have more than 1000, sample 1000
-    text_groups = [
-        (
-            (name, np.random.choice(group, 1000, replace=False))
-            if len(group) > 1000
-            else (name, group)
-        )
-        for name, group in text_groups
-    ]
+    results = compute_n_gram_similarities_per_month(text_groups)
 
-    pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
-
-    # Process groups in parallel and store results
-    results = {}
-    for name, similarities in zip(
-        [g[0] for g in text_groups],
-        pool.starmap(compute_similarities_in_group, text_groups),
-    ):
-        year, month = name
-        print(
-            f"Finished processing year {year}, month {month} with number of entities {len(similarities['texts'])}"
-        )
-        results[name] = similarities
-
-    pool.close()
-    pool.join()
-
-    print("Completed processing all month-year groups")
-    embed()
-    exit()
+    np.save("data/papers/papers_n_gram_similarities.npy", results)
 
 
 if __name__ == "__main__":
@@ -740,3 +1021,18 @@ if __name__ == "__main__":
         process_papers_for_features()
     elif args.process == "papers_ngram_sim":
         process_papers_n_gram_similarities_per_month()
+    elif args.process == "news_featurization":
+        process_news_for_features()
+    elif args.process == "news_ngram_sim":
+        process_news_n_gram_similarities_per_month()
+    elif args.process == "test_papers_featurization":
+        test_process_papers_for_features()
+    elif args.process == "test_syntactical_information":
+        test_process_syntactical_information()
+    elif args.process == "test_compute_sentence_depth":
+        test_compute_sentence_depth()
+    elif args.process == "test_get_pos_information":
+        test_get_pos_information()
+    else:
+        print("Invalid process argument")
+        exit()
