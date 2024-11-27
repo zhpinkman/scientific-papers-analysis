@@ -21,14 +21,14 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 import nltk
 import spacy
+from datetime import datetime, timezone
+from profiling_decorator import profile
+
 
 nlp = spacy.load("en_core_web_sm")
 
 # Set up multiprocessing pool
 import multiprocessing
-
-
-## similarity metrics
 
 
 def get_liwc_dictionary():
@@ -61,7 +61,7 @@ ALL_LIWC_WORDS_SET = set(
 )
 
 
-def filter_text_based_on_liwc(text, liwc_dict, LIWC_CATEGORIES_DICT):
+def filter_text_based_on_liwc(text):
     text_words = set(text.split())
     filtered_text = text_words.intersection(ALL_LIWC_WORDS_SET)
     return filtered_text
@@ -92,7 +92,10 @@ def add_liwc_features(input_df, input_text_column, LIWC_CATEGORIES_DICT):
     output_df = input_df.copy()
 
     # Get all texts upfront
-    texts = [row[input_text_column].lower() for _, row in output_df.iterrows()]
+    texts = [
+        " ".join(row[input_text_column].lower().split())
+        for _, row in output_df.iterrows()
+    ]
 
     # Create pool and process categories in parallel
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
@@ -632,6 +635,7 @@ def compute_sentence_depth(text):
 
 
 def get_pos_information(text):
+
     # Load the SpaCy model
     nlp = spacy.load("en_core_web_sm")
     doc = nlp(text)
@@ -723,39 +727,44 @@ def FeatureExtration(text):
     # cmuDictionary = cmudict.dict()
 
     vector = {}
+    try:
+        # LEXICAL FEATURES
+        vector["lex_avg_word_length"] = avg_wordLength(text)
+        vector["lex_avg_sent_length_by_char"] = avg_SentLenghtByCh(text)
+        vector["lex_avg_sent_length_by_word"] = avg_SentLenghtByWord(text)
+        # vector["lex_avg_syllable_per_word"] = avg_Syllable_per_Word(text)
+        vector["lex_special_char_count"] = countSpecialCharacter(text)
+        vector["lex_punctuation_count"] = countPuncuation(text)
+        vector["lex_functional_words_count"] = CountFunctionalWords(text)
+        vector["lex_lexical_density"] = get_lexical_density(text)
+        vector["lex_avg_dependency_link_length"] = compute_avg_dependency_link_length(
+            text
+        )
+        vector["lex_sentence_depth"] = compute_sentence_depth(text)
+        pos_ner_information = get_pos_information(text)
+        for pos_tag, count in pos_ner_information["pos"].items():
+            vector[f"lex_pos_{pos_tag}"] = count
+        for ner_tag, count in pos_ner_information["ner"].items():
+            vector[f"lex_ner_{ner_tag}"] = count
 
-    # LEXICAL FEATURES
-    vector["lex_avg_word_length"] = avg_wordLength(text)
-    vector["lex_avg_sent_length_by_char"] = avg_SentLenghtByCh(text)
-    vector["lex_avg_sent_length_by_word"] = avg_SentLenghtByWord(text)
-    # vector["lex_avg_syllable_per_word"] = avg_Syllable_per_Word(text)
-    vector["lex_special_char_count"] = countSpecialCharacter(text)
-    vector["lex_punctuation_count"] = countPuncuation(text)
-    vector["lex_functional_words_count"] = CountFunctionalWords(text)
-    vector["lex_lexical_density"] = get_lexical_density(text)
-    vector["lex_avg_dependency_link_length"] = compute_avg_dependency_link_length(text)
-    vector["lex_sentence_depth"] = compute_sentence_depth(text)
-    pos_ner_information = get_pos_information(text)
-    for pos_tag, count in pos_ner_information["pos"].items():
-        vector[f"lex_pos_{pos_tag}"] = count
-    for ner_tag, count in pos_ner_information["ner"].items():
-        vector[f"lex_ner_{ner_tag}"] = count
+        # VOCABULARY RICHNESS FEATURES
+        vector["voc_type_token_ratio"] = typeTokenRatio(text)
 
-    # VOCABULARY RICHNESS FEATURES
-    vector["voc_type_token_ratio"] = typeTokenRatio(text)
+        HonoreMeasureR, hapax = hapaxLegemena(text)
+        vector["voc_hapax_legomena"] = hapax
+        vector["voc_honore_measure_r"] = HonoreMeasureR
 
-    HonoreMeasureR, hapax = hapaxLegemena(text)
-    vector["voc_hapax_legomena"] = hapax
-    vector["voc_honore_measure_r"] = HonoreMeasureR
+        SichelesMeasureS, dihapax = hapaxDisLegemena(text)
+        vector["voc_hapax_dislegomena"] = dihapax
+        vector["voc_sichel_measure_s"] = SichelesMeasureS
 
-    SichelesMeasureS, dihapax = hapaxDisLegemena(text)
-    vector["voc_hapax_dislegomena"] = dihapax
-    vector["voc_sichel_measure_s"] = SichelesMeasureS
-
-    vector["voc_yule_k"] = YulesCharacteristicK(text)
-    vector["voc_simpson_index"] = SimpsonsIndex(text)
-    vector["voc_brunet_measure_w"] = BrunetsMeasureW(text)
-    vector["voc_shannon_entropy"] = ShannonEntropy(text)
+        vector["voc_yule_k"] = YulesCharacteristicK(text)
+        vector["voc_simpson_index"] = SimpsonsIndex(text)
+        vector["voc_brunet_measure_w"] = BrunetsMeasureW(text)
+        vector["voc_shannon_entropy"] = ShannonEntropy(text)
+    except Exception as e:
+        print(e)
+        print("Error processing text:", text)
 
     # READIBILTY FEATURES
     # vector["read_flesch_reading_ease"] = FleschReadingEase(text)
@@ -770,12 +779,12 @@ def compute_all_features_for_df(df, text_column):
     features = []
     # remove rows that are empty
     df = df.dropna(subset=[text_column])
-    df = df[df[text_column].apply(lambda x: len(x) > 0)]
+    df = df[df[text_column].apply(lambda x: len(x) > 10)]
     # Create pool and process texts in parallel
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
 
     # Convert df to list of texts for parallel processing
-    texts = [row[text_column].lower() for _, row in df.iterrows()]
+    texts = [row[text_column] for _, row in df.iterrows()]
 
     # Process texts in parallel and collect features
     features = list(
@@ -790,7 +799,6 @@ def compute_all_features_for_df(df, text_column):
     pool.join()
 
     features_df = pd.DataFrame(features)
-    features_df[text_column] = df[text_column]
     for col in df:
         if col not in features_df:
             features_df[col] = df[col]
@@ -800,14 +808,64 @@ def compute_all_features_for_df(df, text_column):
     return features_df
 
 
-from profiling_decorator import profile
+def compute_similarities_based_on_features(df, features_df, year_col, month_col):
+
+    grouped = features_df.groupby([year_col, month_col])
+    features_columns = [col for col in features_df.columns if col not in df.columns]
+
+    months = []
+    years = []
+    variances = defaultdict(list)
+    means = defaultdict(list)
+
+    for name, group in grouped:
+        year, month = name
+        print(f"Computing similarities for year {year}, month {month}")
+        for col in features_columns:
+            variances[col].append(group[col].var())
+            means[col].append(group[col].mean())
+        months.append(month)
+        years.append(year)
+
+    variances_df = pd.DataFrame({"year": years, "month": months})
+    for col in features_columns:
+        variances_df[f"similarity_{col}"] = variances[col]
+        variances_df[f"mean_{col}"] = means[col]
+
+    return variances_df
+
+
+@profile
+def process_reddit_for_features():
+    df = pd.read_csv("data/reddit/filtered_comments.csv")
+
+    # grouped = df.groupby([df["year"], df["month"]])
+    # text_groups = [(name, group["body"].tolist()) for name, group in grouped]
+
+    features_df = compute_all_features_for_df(df, "body")
+    features_df.to_csv("data/reddit/reddit_features.csv", index=False)
+
+    # Compute similarities based on features
+    similarities_df = compute_similarities_based_on_features(
+        df, features_df, "year", "month"
+    )
+    similarities_df.to_csv("data/reddit/reddit_similarities.csv", index=False)
 
 
 @profile
 def process_papers_for_features():
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
+    df["final_date"] = pd.to_datetime(df["update_date"])
+    df["year"] = df["final_date"].dt.year
+    df["month"] = df["final_date"].dt.month
     features_df = compute_all_features_for_df(df, "abstract")
     features_df.to_csv("data/papers/cl_cv_papers_features.csv", index=False)
+
+    # Compute similarities based on features
+    similarities_df = compute_similarities_based_on_features(
+        df, features_df, "year", "month"
+    )
+    similarities_df.to_csv("data/papers/cl_cv_papers_similarities.csv", index=False)
 
 
 @profile
@@ -822,9 +880,20 @@ def process_news_for_features():
         for d in tqdm(data, leave=False)
     ]
 
-    df = pd.DataFrame({"text": texts})
+    update_times_months = [int(d["updated"][5:7]) for d in data]
+    update_times_years = [int(d["updated"][:4]) for d in data]
+
+    df = pd.DataFrame(
+        {"text": texts, "year": update_times_years, "month": update_times_months}
+    )
     features_df = compute_all_features_for_df(df, "text")
     features_df.to_csv("data/news/news_features.csv", index=False)
+
+    # Compute similarities based on features
+    similarities_df = compute_similarities_based_on_features(
+        df, features_df, "year", "month"
+    )
+    similarities_df.to_csv("data/news/news_similarities.csv", index=False)
 
 
 def test_process_papers_for_features():
@@ -886,14 +955,36 @@ def compute_similarities_in_group(group, texts):
 
     # using the n_gram_similarity function, parallelize the computation and compute the similarity between all pairs of texts
     similarities_dict = {}
-    for i in tqdm(range(len(clean_texts)), leave=False):
-        for j in tqdm(range(i + 1, len(clean_texts)), leave=False):
-            try:
-                similarities_dict[(i, j)] = n_gram_similarity(
-                    clean_texts[i], clean_texts[j]
-                )
-            except Exception as e:
-                similarities_dict[(i, j)] = np.nan
+
+    def process_n_gram(n, clean_texts):
+        n_similarities = {}
+        for i in tqdm(range(len(clean_texts)), leave=False):
+            for j in range(i, len(clean_texts)):
+                try:
+                    n_similarities[(i, j)] = n_gram_similarity(
+                        clean_texts[i], clean_texts[j], n
+                    )
+                except Exception as e:
+                    n_similarities[(i, j)] = np.nan
+        return n, n_similarities
+
+    # Use threading instead of multiprocessing for nested parallelization
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Process each n-gram in parallel using threads
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        # Submit all tasks and get futures
+        futures = [executor.submit(process_n_gram, n, clean_texts) for n in [1, 2, 3]]
+
+        # Get results as they complete
+        results = []
+        for future in futures:
+            results.append(future.result())
+
+    # Combine results into similarities dict
+    for n, n_similarities in results:
+        similarities_dict[n] = n_similarities
     final_object = {
         "texts": texts,
         "clean_texts": clean_texts,
@@ -906,7 +997,7 @@ def compute_n_gram_similarities_per_month(text_groups):
 
     processed_text_groups = []
     for name, group in text_groups:
-        if len(group) < 2000:
+        if len(group) < 1000:
             processed_text_groups.append((name, group))
         else:
             np.random.seed(42)
@@ -915,7 +1006,7 @@ def compute_n_gram_similarities_per_month(text_groups):
                     name,
                     np.random.choice(
                         group,
-                        2000,
+                        1000,
                         replace=False,
                     ).tolist(),
                 )
@@ -933,7 +1024,7 @@ def compute_n_gram_similarities_per_month(text_groups):
         print(
             f"Finished processing year {year}, month {month} with number of entities {len(similarities['texts'])}"
         )
-        results[f"{name[0]}_{name[1]}"] = similarities
+        results[name] = similarities
 
     pool.close()
     pool.join()
@@ -941,6 +1032,57 @@ def compute_n_gram_similarities_per_month(text_groups):
     print("Completed processing all month-year groups")
 
     return results
+
+
+def create_ngram_similarities_df(results):
+    months = []
+    years = []
+    text_indices_0 = []
+    text_indices_1 = []
+    n_gram_type = []
+    similarities = []
+
+    for (year, month), similarities_dict in results.items():
+        for n, n_similarities in similarities_dict["similarities"].items():
+            for (i, j), similarity in n_similarities.items():
+                months.append(month)
+                years.append(year)
+                text_indices_0.append(i)
+                text_indices_1.append(j)
+                n_gram_type.append(n)
+                similarities.append(similarity)
+
+    df = pd.DataFrame(
+        {
+            "year": years,
+            "month": months,
+            "text_index_0": text_indices_0,
+            "text_index_1": text_indices_1,
+            "n_gram_type": n_gram_type,
+            "similarity": similarities,
+        }
+    )
+    return df
+
+
+def process_reddit_n_gram_similarities_per_month():
+    df = pd.read_csv("data/reddit/filtered_comments.csv")
+
+    grouped = df.groupby([df["year"], df["month"]])
+    text_groups = [(name, group["body"].tolist()) for name, group in grouped]
+
+    print(f"Found {len(text_groups)} month-year groups to process")
+    print("Min entities in a group:", min([len(g[1]) for g in text_groups]))
+    print("Max entities in a group:", max([len(g[1]) for g in text_groups]))
+    print("Mean entities in a group:", np.mean([len(g[1]) for g in text_groups]))
+    print("Median entities in a group:", np.median([len(g[1]) for g in text_groups]))
+
+    results = compute_n_gram_similarities_per_month(text_groups)
+
+    np.save("data/reddit/reddit_n_gram_similarities.npy", results)
+    create_ngram_similarities_df(results).to_csv(
+        "data/reddit/reddit_n_gram_similarities.csv", index=False
+    )
 
 
 def process_news_n_gram_similarities_per_month():
@@ -976,10 +1118,12 @@ def process_news_n_gram_similarities_per_month():
     print("Mean entities in a group:", np.mean([len(g[1]) for g in text_groups]))
     print("Median entities in a group:", np.median([len(g[1]) for g in text_groups]))
 
-    # for the groups that have more than 1000, sample 1000
     results = compute_n_gram_similarities_per_month(text_groups)
 
     np.save("data/news/news_n_gram_similarities.npy", results)
+    create_ngram_similarities_df(results).to_csv(
+        "data/news/news_n_gram_similarities.csv", index=False
+    )
 
 
 def process_papers_n_gram_similarities_per_month():
@@ -1001,10 +1145,13 @@ def process_papers_n_gram_similarities_per_month():
     print("Median entities in a group:", np.median([len(g[1]) for g in text_groups]))
     # for testing, limit the text_groups to only a few in each group
     # text_groups = [(name, group[:10]) for name, group in text_groups]
-    # for the groups that have more than 1000, sample 1000
+
     results = compute_n_gram_similarities_per_month(text_groups)
 
     np.save("data/papers/papers_n_gram_similarities.npy", results)
+    create_ngram_similarities_df(results).to_csv(
+        "data/papers/papers_n_gram_similarities.csv", index=False
+    )
 
 
 if __name__ == "__main__":
@@ -1025,6 +1172,10 @@ if __name__ == "__main__":
         process_news_for_features()
     elif args.process == "news_ngram_sim":
         process_news_n_gram_similarities_per_month()
+    elif args.process == "reddit_ngram_sim":
+        process_reddit_n_gram_similarities_per_month()
+    elif args.process == "reddit_featurization":
+        process_reddit_for_features()
     elif args.process == "test_papers_featurization":
         test_process_papers_for_features()
     elif args.process == "test_syntactical_information":
