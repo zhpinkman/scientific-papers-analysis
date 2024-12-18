@@ -93,7 +93,7 @@ def add_liwc_features(input_df, input_text_column, LIWC_CATEGORIES_DICT):
 
     # Get all texts upfront
     texts = [
-        " ".join(row[input_text_column].lower().split())
+        " ".join(str(row[input_text_column]).lower().split())
         for _, row in output_df.iterrows()
     ]
 
@@ -159,7 +159,6 @@ def syllable_count(word):
 
 # removing stop words plus punctuation.
 def avg_wordLength(str):
-    str.translate(string.punctuation)
     tokens = word_tokenize(str, language="english")
     st = [
         ",",
@@ -300,10 +299,10 @@ def countSpecialCharacter(text):
         "\n",
     ]
     count = 0
-    for i in text:
-        if i in st:
-            count = count + 1
-    return count / len(text)
+    for character in st:
+        count += text.count(character)
+
+    return count / len(text.split())
 
 
 # ----------------------------------------------------------------------------
@@ -312,10 +311,10 @@ def countSpecialCharacter(text):
 def countPuncuation(text):
     st = [",", ".", "'", "!", '"', ";", "?", ":", ";"]
     count = 0
-    for i in text:
-        if i in st:
-            count = count + 1
-    return float(count) / float(len(text))
+    for character in st:
+        count += text.count(character)
+
+    return float(count) / float(len(text.split()))
 
 
 def RemoveSpecialCHs(text):
@@ -394,11 +393,51 @@ def CountFunctionalWords(text):
     words = RemoveSpecialCHs(text)
     count = 0
 
-    for i in text:
-        if i in functional_words:
-            count += 1
+    text = f" {text} "
+    for word in functional_words:
+        count += text.lower().count(f" {word} ")
 
     return count / len(words)
+
+
+def count_functional_words_one_by_one(text):
+    functional_words = """a between in nor some upon
+    about both including nothing somebody us
+    above but inside of someone used
+    after by into off something via
+    all can is on such we
+    although cos it once than what
+    am do its one that whatever
+    among down latter onto the when
+    an each less opposite their where
+    and either like or them whether
+    another enough little our these which
+    any every lots outside they while
+    anybody everybody many over this who
+    anyone everyone me own those whoever
+    anything everything more past though whom
+    are few most per through whose
+    around following much plenty till will
+    as for must plus to with
+    at from my regarding toward within
+    be have near same towards without
+    because he need several under worth
+    before her neither she unless would
+    behind him no should unlike yes
+    below i nobody since until you
+    beside if none so up your
+    """
+    text = f" {text} "
+    functional_words = functional_words.split()
+    functional_words_counts = dict()
+    for word in functional_words:
+        functional_words_counts[word] = text.lower().count(f" {word} ")
+
+    normalized_counts = {
+        word: count / len(text.split())
+        for word, count in functional_words_counts.items()
+    }
+    return normalized_counts
 
 
 # also returns Honore Measure R
@@ -629,9 +668,23 @@ def compute_sentence_depth(text):
     depths = []
     for sent in doc.sents:
         root = [token for token in sent if token.head == token][0]
-        depth = find_depth(root)
-        depths.append(depth)
+        depths.append(find_depth(root))
     return np.mean(depths)
+
+
+def get_dep_information(text):
+
+    nlp = spacy.load("en_core_web_sm")
+
+    doc = nlp(text)
+
+    dep_tags = [token.dep_ for token in doc]
+
+    dep_distribution = {
+        tag: count / len(text.split()) for tag, count in Counter(dep_tags).items()
+    }
+
+    return dep_distribution
 
 
 def get_pos_information(text):
@@ -644,11 +697,15 @@ def get_pos_information(text):
     pos_tags = [token.pos_ for token in doc]
 
     # Count the frequency of each POS tag
-    pos_distribution = dict(Counter(pos_tags))
+    pos_distribution = {
+        tag: count / len(text.split()) for tag, count in Counter(pos_tags).items()
+    }
 
     # Extract named entities
     ner_tags = [ent.label_ for ent in doc.ents]
-    ner_distribution = dict(Counter(ner_tags))
+    ner_distribution = {
+        tag: count / len(text.split()) for tag, count in Counter(ner_tags).items()
+    }
 
     return {"pos": pos_distribution, "ner": ner_distribution}
 
@@ -736,6 +793,9 @@ def FeatureExtration(text):
         vector["lex_special_char_count"] = countSpecialCharacter(text)
         vector["lex_punctuation_count"] = countPuncuation(text)
         vector["lex_functional_words_count"] = CountFunctionalWords(text)
+        all_functional_words_counts = count_functional_words_one_by_one(text)
+        for word, count in all_functional_words_counts.items():
+            vector[f"lex_functional_word_{word}"] = count
         vector["lex_lexical_density"] = get_lexical_density(text)
         vector["lex_avg_dependency_link_length"] = compute_avg_dependency_link_length(
             text
@@ -746,6 +806,10 @@ def FeatureExtration(text):
             vector[f"lex_pos_{pos_tag}"] = count
         for ner_tag, count in pos_ner_information["ner"].items():
             vector[f"lex_ner_{ner_tag}"] = count
+
+        dep_information = get_dep_information(text)
+        for dep_tag, count in dep_information.items():
+            vector[f"lex_dep_{dep_tag}"] = count
 
         # VOCABULARY RICHNESS FEATURES
         vector["voc_type_token_ratio"] = typeTokenRatio(text)
@@ -779,7 +843,9 @@ def compute_all_features_for_df(df, text_column):
     features = []
     # remove rows that are empty
     df = df.dropna(subset=[text_column])
-    df = df[df[text_column].apply(lambda x: len(x) > 10)]
+    # convert the text_column to string
+    df[text_column] = df[text_column].astype(str)
+    df = df[df[text_column].apply(lambda x: len(x.split()) > 10)]
     # Create pool and process texts in parallel
     pool = multiprocessing.Pool(processes=multiprocessing.cpu_count())
 
@@ -886,6 +952,13 @@ def process_news_for_features():
     df = pd.DataFrame(
         {"text": texts, "year": update_times_years, "month": update_times_months}
     )
+    # from each (year, month), take 1 / 4 of the data
+    df = (
+        df.groupby(["year", "month"])
+        .apply(lambda x: x.sample(frac=0.25, replace=False, random_state=42))
+        .reset_index(drop=True)
+    )
+
     features_df = compute_all_features_for_df(df, "text")
     features_df.to_csv("data/news/news_features.csv", index=False)
 
