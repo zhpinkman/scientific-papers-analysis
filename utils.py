@@ -965,7 +965,9 @@ def check_if_ai_written_papers():
     # Use a pipeline as a high-level helper
     from transformers import pipeline
 
-    pipe = pipeline("text-classification", model="PirateXX/AI-Content-Detector")
+    pipe = pipeline(
+        "text-classification", model="PirateXX/AI-Content-Detector", device=1
+    )
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
     df["final_date"] = pd.to_datetime(df["update_date"])
     df["year"] = df["final_date"].dt.year
