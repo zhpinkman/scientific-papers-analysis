@@ -1,2 +1,4 @@
-data/*
+data/news/
+data/papers
+data/reddit/
 myenv/*
