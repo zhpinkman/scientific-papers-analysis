@@ -1,5 +1,6 @@
 import collections as coll
 import math
+from multiprocessing import Pool, cpu_count
 from collections import Counter, defaultdict
 import pickle
 import string
@@ -918,6 +919,140 @@ def process_reddit_for_features():
     similarities_df.to_csv("data/reddit/reddit_similarities.csv", index=False)
 
 
+import language_tool_python
+
+
+def process_chunk(texts):
+    local_tool = language_tool_python.LanguageTool("en-US")
+    chunk_errors = []
+    for text in tqdm(texts, leave=False):
+        try:
+            num_errors = len(local_tool.check(text))
+            chunk_errors.append(num_errors)
+        except Exception as e:
+            print(e)
+            chunk_errors.append(np.nan)
+    return chunk_errors
+
+
+def check_for_grammatical_errors_reddit():
+    df = pd.read_csv("data/reddit/filtered_comments.csv")
+
+    all_texts = df["body"].tolist()
+
+    # Split texts into chunks based on CPU count
+    num_processes = cpu_count()
+    chunk_size = len(all_texts) // num_processes
+    chunks = [
+        all_texts[i : min(i + chunk_size, len(all_texts))]
+        for i in range(0, len(all_texts), chunk_size)
+    ]
+
+    # Process chunks in parallel
+    with Pool(processes=num_processes) as pool:
+        chunk_results = list(tqdm(pool.imap(process_chunk, chunks), total=len(chunks)))
+
+    # Combine results
+    all_num_errors = []
+    for result in chunk_results:
+        all_num_errors.extend(result)
+    df["num_errors"] = all_num_errors
+    df.to_csv("data/reddit/reddit_errors.csv", index=False)
+
+
+def check_if_ai_written_papers():
+
+    # Use a pipeline as a high-level helper
+    from transformers import pipeline
+
+    pipe = pipeline("text-classification", model="PirateXX/AI-Content-Detector")
+    df = pd.read_csv("data/papers/cl_cv_papers.csv")
+    df["final_date"] = pd.to_datetime(df["update_date"])
+    df["year"] = df["final_date"].dt.year
+    df["month"] = df["final_date"].dt.month
+
+    all_texts = df["abstract"].tolist()
+    all_results = []
+    for text in tqdm(all_texts, leave=False):
+        try:
+            result = pipe(text)
+            all_results.append(result)
+        except Exception as e:
+            print(e)
+            all_results.append(np.nan)
+            continue
+
+    df["ai_written"] = all_results
+    df.to_csv("data/papers/cl_cv_papers_ai_written.csv", index=False)
+
+
+def check_for_grammatical_errors_papers():
+    df = pd.read_csv("data/papers/cl_cv_papers.csv")
+    df["final_date"] = pd.to_datetime(df["update_date"])
+    df["year"] = df["final_date"].dt.year
+    df["month"] = df["final_date"].dt.month
+
+    all_texts = df["abstract"].tolist()
+    tool = language_tool_python.LanguageTool("en-US")
+    all_num_errors = []
+    for text in tqdm(all_texts):
+        try:
+            num_errors = len(tool.check(text))
+            all_num_errors.append(num_errors)
+        except Exception as e:
+            print(e)
+            all_num_errors.append(np.nan)
+            continue
+    df["num_errors"] = all_num_errors
+    df.to_csv("data/papers/cl_cv_papers_errors.csv", index=False)
+
+
+def check_for_grammatical_errors_news():
+    with open("data/news/[tagged-zip]patchData.news.json") as f:
+        data = json.load(f)
+        f.close()
+
+    # use beautiful soup to only get the content of the texts
+    texts = [
+        BeautifulSoup(d["body"], "html.parser").get_text()
+        for d in tqdm(data, leave=False)
+    ]
+
+    update_times_months = [int(d["updated"][5:7]) for d in data]
+    update_times_years = [int(d["updated"][:4]) for d in data]
+
+    df = pd.DataFrame(
+        {"text": texts, "year": update_times_years, "month": update_times_months}
+    )
+
+    df = (
+        df.groupby(["year", "month"])
+        .apply(lambda x: x.sample(frac=0.15, replace=False, random_state=42))
+        .reset_index(drop=True)
+    )
+
+    all_texts = df["text"].tolist()
+
+    num_processes = cpu_count()
+    chunk_size = len(all_texts) // num_processes
+    chunks = [
+        all_texts[i : min(i + chunk_size, len(all_texts))]
+        for i in range(0, len(all_texts), chunk_size)
+    ]
+
+    # Process chunks in parallel
+    with Pool(processes=num_processes) as pool:
+        chunk_results = list(tqdm(pool.imap(process_chunk, chunks), total=len(chunks)))
+
+    # Combine results
+    all_num_errors = []
+    for result in chunk_results:
+        all_num_errors.extend(result)
+    df["num_errors"] = all_num_errors
+
+    df.to_csv("data/news/news_errors.csv", index=False)
+
+
 @profile
 def process_papers_for_features():
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
@@ -1257,6 +1392,14 @@ if __name__ == "__main__":
         test_compute_sentence_depth()
     elif args.process == "test_get_pos_information":
         test_get_pos_information()
+    elif args.process == "check_errors_papers":
+        check_for_grammatical_errors_papers()
+    elif args.process == "check_errors_reddit":
+        check_for_grammatical_errors_reddit()
+    elif args.process == "check_errors_news":
+        check_for_grammatical_errors_news()
+    elif args.process == "check_ai_written_papers":
+        check_if_ai_written_papers()
     else:
         print("Invalid process argument")
         exit()
