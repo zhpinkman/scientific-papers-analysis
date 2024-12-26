@@ -27,3 +27,8 @@ data/reddit/r_fantasywriters_posts.jsonl
 data/reddit/r_DestructiveReaders_comments.jsonl
 data/reddit/reddit_ai_written.csv
 data/reddit/r_DestructiveReaders_posts.jsonl
+data/news/news_errors.csv
+data/papers/cl_cv_papers_errors.csv
+data/papers/papers_n_gram_similarities.csv
+data/papers/papers_n_gram_similarities.npy
+data/reddit/reddit_errors.csv
