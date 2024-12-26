@@ -1,0 +1,301 @@
+PCA 1 (Explained variance: 0.211)
+similarity_lex_functional_word_we     0.113352
+similarity_lex_functional_word_is     0.112604
+similarity_lex_dep_auxpass            0.112302
+similarity_lex_functional_word_a      0.110788
+similarity_lex_functional_word_are    0.108916
+--------------------------------------------------
+PCA 2 (Explained variance: 0.040)
+similarity_lex_dep_dobj                   0.180974
+similarity_liwc_posemo                    0.174913
+similarity_lex_functional_word_through    0.163683
+similarity_lex_functional_word_these      0.158850
+similarity_lex_functional_word_their      0.151677
+--------------------------------------------------
+PCA 3 (Explained variance: 0.038)
+similarity_liwc_bio                    0.184651
+similarity_liwc_health                 0.161979
+similarity_lex_functional_word_more   -0.150883
+similarity_liwc_see                    0.148042
+similarity_liwc_anger                 -0.145481
+--------------------------------------------------
+PCA 4 (Explained variance: 0.029)
+similarity_lex_ner_LANGUAGE               0.166592
+similarity_lex_dep_meta                  -0.164085
+similarity_lex_pos_X                      0.159877
+similarity_lex_functional_word_nothing   -0.152141
+similarity_lex_functional_words_count     0.150144
+--------------------------------------------------
+PCA 5 (Explained variance: 0.026)
+similarity_lex_dep_punct            0.205647
+similarity_lex_pos_PUNCT            0.191982
+similarity_liwc_negemo              0.164470
+similarity_liwc_anger               0.153965
+similarity_lex_punctuation_count    0.152225
+--------------------------------------------------
+PCA 6 (Explained variance: 0.025)
+similarity_lex_functional_word_everybody    0.198711
+similarity_lex_pos_X                        0.192219
+similarity_liwc_you                         0.182821
+similarity_lex_functional_word_it           0.150981
+similarity_lex_ner_LANGUAGE                 0.147331
+--------------------------------------------------
+PCA 7 (Explained variance: 0.024)
+similarity_lex_pos_CCONJ                    0.209528
+similarity_lex_dep_cc                       0.199203
+similarity_lex_functional_word_and          0.193694
+similarity_lex_ner_WORK_OF_ART             -0.182771
+similarity_lex_functional_word_including    0.163654
+--------------------------------------------------
+PCA 8 (Explained variance: 0.022)
+similarity_lex_functional_word_below        0.171754
+similarity_liwc_funct                       0.159767
+similarity_lex_functional_word_following    0.157588
+similarity_lex_functional_word_near        -0.155278
+similarity_lex_functional_word_whatever     0.148824
+--------------------------------------------------
+PCA 9 (Explained variance: 0.021)
+similarity_lex_pos_SYM                      0.162967
+similarity_lex_functional_word_what        -0.159168
+similarity_lex_functional_word_something   -0.154139
+similarity_lex_functional_word_every        0.145406
+similarity_lex_functional_word_should      -0.139945
+--------------------------------------------------
+PCA 10 (Explained variance: 0.020)
+similarity_lex_functional_word_plenty    0.182454
+similarity_lex_ner_PERSON                0.155793
+similarity_lex_dep_quantmod              0.151783
+similarity_lex_dep_prt                  -0.143844
+similarity_lex_ner_QUANTITY              0.142932
+--------------------------------------------------
+PCA 11 (Explained variance: 0.019)
+similarity_lex_ner_ORG                 0.151664
+similarity_lex_dep_punct               0.147332
+similarity_lex_pos_PUNCT               0.144935
+similarity_liwc_certain                0.139139
+similarity_lex_functional_word_whom    0.135854
+--------------------------------------------------
+PCA 12 (Explained variance: 0.018)
+similarity_lex_functional_word_after      0.179598
+similarity_liwc_i                        -0.158961
+similarity_lex_dep_dative                 0.148295
+similarity_lex_functional_word_between    0.142161
+similarity_lex_dep_npadvmod               0.138563
+--------------------------------------------------
+PCA 13 (Explained variance: 0.018)
+similarity_lex_dep_case                     0.175044
+similarity_lex_functional_word_own         -0.168516
+similarity_lex_ner_NORP                     0.155313
+similarity_lex_functional_word_following    0.145090
+similarity_lex_functional_word_above        0.145070
+--------------------------------------------------
+PCA 14 (Explained variance: 0.017)
+similarity_lex_dep_nummod                   0.217053
+similarity_liwc_home                       -0.180156
+similarity_lex_pos_SYM                     -0.173171
+similarity_lex_functional_word_regarding   -0.157574
+similarity_lex_pos_NUM                      0.151194
+--------------------------------------------------
+PCA 15 (Explained variance: 0.016)
+similarity_lex_dep_csubjpass             0.152664
+similarity_lex_functional_word_you       0.152657
+similarity_lex_functional_word_inside    0.151106
+similarity_lex_functional_word_above    -0.144777
+similarity_lex_dep_csubj                 0.140121
+--------------------------------------------------
+PCA 16 (Explained variance: 0.016)
+similarity_lex_functional_word_without    0.195878
+similarity_lex_ner_GPE                   -0.161093
+similarity_lex_functional_word_will      -0.151799
+similarity_lex_functional_word_little    -0.151131
+similarity_liwc_swear                    -0.140411
+--------------------------------------------------
+PCA 17 (Explained variance: 0.016)
+similarity_lex_functional_word_her      0.200743
+similarity_lex_functional_word_off      0.182233
+similarity_lex_functional_word_while    0.163311
+similarity_liwc_money                   0.154303
+similarity_lex_functional_word_below   -0.141580
+--------------------------------------------------
+PCA 18 (Explained variance: 0.015)
+similarity_lex_functional_word_her       0.200556
+similarity_lex_functional_word_unlike   -0.173978
+similarity_lex_functional_word_onto     -0.163298
+similarity_liwc_motion                   0.158567
+similarity_lex_functional_word_whose    -0.139354
+--------------------------------------------------
+PCA 19 (Explained variance: 0.014)
+similarity_lex_functional_word_after     0.182261
+similarity_lex_dep_intj                 -0.178409
+similarity_lex_functional_word_must      0.172889
+similarity_lex_functional_word_enough    0.161893
+similarity_lex_functional_word_once     -0.159422
+--------------------------------------------------
+PCA 20 (Explained variance: 0.014)
+similarity_lex_functional_word_lots        0.176573
+similarity_lex_dep_csubj                   0.171757
+similarity_liwc_family                     0.162472
+similarity_lex_functional_word_everyone   -0.162216
+similarity_lex_functional_word_upon       -0.162182
+--------------------------------------------------
+PCA 21 (Explained variance: 0.014)
+similarity_liwc_leisure                  0.178817
+similarity_liwc_friend                   0.169741
+similarity_lex_functional_word_like      0.165279
+similarity_lex_ner_TIME                 -0.153843
+similarity_lex_functional_word_anyone   -0.150630
+--------------------------------------------------
+PCA 22 (Explained variance: 0.013)
+similarity_lex_functional_word_off         0.168523
+similarity_liwc_anx                       -0.165335
+similarity_lex_functional_word_like       -0.155826
+similarity_lex_functional_word_opposite    0.149778
+similarity_lex_functional_word_up          0.141851
+--------------------------------------------------
+PCA 23 (Explained variance: 0.013)
+similarity_liwc_humans                 0.152090
+similarity_lex_functional_word_am     -0.149963
+similarity_lex_functional_word_who    -0.148129
+similarity_lex_dep_cc                  0.145477
+similarity_lex_functional_word_need   -0.140140
+--------------------------------------------------
+PCA 24 (Explained variance: 0.013)
+similarity_lex_functional_word_regarding    0.155518
+similarity_lex_functional_word_my          -0.142426
+similarity_liwc_money                      -0.141370
+similarity_lex_avg_sent_length_by_word      0.139730
+similarity_lex_pos_ADV                      0.139187
+--------------------------------------------------
+PCA 25 (Explained variance: 0.013)
+similarity_lex_functional_word_yes     0.222015
+similarity_lex_functional_word_when    0.200998
+similarity_lex_pos_INTJ                0.166115
+similarity_lex_ner_TIME               -0.153776
+similarity_lex_functional_word_none   -0.143038
+--------------------------------------------------
+PCA 26 (Explained variance: 0.012)
+similarity_lex_functional_word_into       0.215136
+similarity_lex_dep_csubjpass              0.192585
+similarity_lex_functional_word_inside     0.169552
+similarity_lex_functional_word_down      -0.155126
+similarity_lex_functional_word_neither   -0.147472
+--------------------------------------------------
+PCA 27 (Explained variance: 0.012)
+similarity_lex_functional_word_you         0.193978
+similarity_lex_functional_word_anybody     0.186964
+similarity_lex_functional_word_to          0.151601
+similarity_lex_functional_word_somebody    0.150499
+similarity_liwc_ingest                    -0.140599
+--------------------------------------------------
+PCA 28 (Explained variance: 0.012)
+similarity_lex_ner_FAC                   0.185552
+similarity_lex_functional_word_am        0.180252
+similarity_lex_ner_PRODUCT               0.176601
+similarity_lex_pos_NOUN                  0.168830
+similarity_lex_functional_word_around    0.158023
+--------------------------------------------------
+PCA 29 (Explained variance: 0.011)
+similarity_lex_functional_word_i           0.164011
+similarity_lex_functional_word_toward     -0.160045
+similarity_lex_dep_neg                    -0.157647
+similarity_lex_functional_word_outside     0.155665
+similarity_lex_functional_word_opposite    0.152749
+--------------------------------------------------
+PCA 30 (Explained variance: 0.011)
+similarity_lex_functional_word_cos    0.210246
+similarity_liwc_motion               -0.168265
+similarity_lex_ner_LAW                0.162894
+similarity_lex_ner_PRODUCT            0.140075
+similarity_liwc_conj                  0.136958
+--------------------------------------------------
+PCA 31 (Explained variance: 0.011)
+similarity_liwc_cause                   0.180877
+similarity_lex_functional_word_about   -0.149512
+similarity_liwc_money                   0.149335
+similarity_lex_punctuation_count        0.146972
+similarity_lex_functional_word_me      -0.139787
+--------------------------------------------------
+PCA 32 (Explained variance: 0.010)
+similarity_lex_functional_word_following    0.188444
+similarity_lex_avg_sent_length_by_word     -0.175425
+similarity_lex_avg_sent_length_by_char     -0.170726
+similarity_lex_functional_word_i            0.167581
+similarity_lex_functional_word_would       -0.162380
+--------------------------------------------------
+PCA 33 (Explained variance: 0.010)
+similarity_lex_functional_word_your       0.210970
+similarity_lex_dep_quantmod              -0.180246
+similarity_lex_functional_word_anybody    0.175035
+similarity_lex_functional_word_yes       -0.173846
+similarity_lex_ner_ORG                   -0.169870
+--------------------------------------------------
+PCA 34 (Explained variance: 0.009)
+similarity_lex_ner_LAW                       0.229616
+similarity_lex_pos_INTJ                     -0.193772
+similarity_lex_pos_NOUN                     -0.157379
+similarity_lex_functional_word_although      0.150129
+similarity_lex_functional_word_everything   -0.147700
+--------------------------------------------------
+PCA 35 (Explained variance: 0.009)
+similarity_lex_dep_oprd                      0.201757
+similarity_lex_functional_word_everything    0.177693
+similarity_lex_dep_preconj                  -0.164655
+similarity_lex_functional_word_anybody       0.159592
+similarity_lex_dep_agent                    -0.144603
+--------------------------------------------------
+PCA 36 (Explained variance: 0.009)
+similarity_lex_ner_LAW                  0.215674
+similarity_lex_functional_word_none    -0.167367
+similarity_lex_functional_word_until    0.162803
+similarity_lex_dep_npadvmod            -0.144649
+similarity_lex_ner_DATE                -0.141550
+--------------------------------------------------
+PCA 37 (Explained variance: 0.008)
+similarity_lex_functional_word_worth       0.222366
+similarity_lex_functional_word_whether     0.212597
+similarity_lex_functional_word_somebody    0.161927
+similarity_liwc_death                     -0.154868
+similarity_lex_ner_EVENT                   0.136269
+--------------------------------------------------
+PCA 38 (Explained variance: 0.008)
+similarity_lex_functional_word_she        0.200323
+similarity_lex_functional_word_him       -0.191686
+similarity_lex_functional_word_down       0.184315
+similarity_lex_functional_word_towards   -0.163105
+similarity_lex_dep_preconj               -0.156849
+--------------------------------------------------
+PCA 39 (Explained variance: 0.008)
+similarity_liwc_death                     0.210788
+similarity_liwc_achieve                   0.192138
+similarity_lex_functional_word_until      0.190106
+similarity_lex_functional_word_someone    0.147015
+similarity_lex_dep_prt                   -0.142725
+--------------------------------------------------
+PCA 40 (Explained variance: 0.008)
+similarity_lex_functional_word_cos         0.265545
+similarity_lex_functional_word_outside    -0.188096
+similarity_lex_functional_word_lots        0.183609
+similarity_lex_functional_word_although    0.164721
+similarity_lex_functional_word_into        0.141772
+--------------------------------------------------
+PCA 41 (Explained variance: 0.007)
+similarity_lex_dep_nmod              0.171949
+similarity_lex_dep_advmod            0.161743
+similarity_lex_dep_oprd             -0.152665
+similarity_lex_pos_ADV               0.151902
+similarity_lex_functional_word_he    0.146088
+--------------------------------------------------
+PCA 42 (Explained variance: 0.007)
+similarity_lex_functional_word_they        0.180489
+similarity_lex_functional_word_my          0.172493
+similarity_lex_functional_word_someone    -0.154436
+similarity_liwc_assent                     0.146413
+similarity_lex_functional_word_opposite    0.146178
+--------------------------------------------------
+PCA 43 (Explained variance: 0.007)
+similarity_lex_functional_word_latter    0.172158
+similarity_lex_ner_LAW                   0.141228
+similarity_liwc_family                   0.139241
+similarity_lex_functional_word_he       -0.137908
+similarity_lex_ner_DATE                 -0.133031
+--------------------------------------------------

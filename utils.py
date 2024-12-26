@@ -4,6 +4,7 @@ from multiprocessing import Pool, cpu_count
 from collections import Counter, defaultdict
 import pickle
 import string
+from binoculars import Binoculars
 from spacy import displacy
 import argparse
 import json
@@ -960,28 +961,116 @@ def check_for_grammatical_errors_reddit():
     df.to_csv("data/reddit/reddit_errors.csv", index=False)
 
 
+def check_if_ai_written_news():
+    with open("data/news/[tagged-zip]patchData.news.json") as f:
+        data = json.load(f)
+        f.close()
+
+    # use beautiful soup to only get the content of the texts
+    texts = [
+        BeautifulSoup(d["body"], "html.parser").get_text()
+        for d in tqdm(data, leave=False)
+    ]
+
+    update_times_months = [int(d["updated"][5:7]) for d in data]
+    update_times_years = [int(d["updated"][:4]) for d in data]
+
+    df = pd.DataFrame(
+        {"text": texts, "year": update_times_years, "month": update_times_months}
+    )
+
+    sampled_df = (
+        df.groupby(["year", "month"])
+        .apply(lambda x: x.sample(frac=0.15, replace=False, random_state=42))
+        .reset_index(drop=True)
+    )
+
+    all_texts = sampled_df["text"].tolist()
+    chunk_size = 32
+    chunks = [
+        all_texts[i : min(i + chunk_size, len(all_texts))]
+        for i in range(0, len(all_texts), chunk_size)
+    ]
+
+    bino = Binoculars(DEVICE_1="cuda:0", DEVICE_2="cuda:1")
+
+    all_results = []
+    for chunk in tqdm(chunks, desc="Processing chunks"):
+        try:
+            chunk_results = bino.compute_score(chunk)
+            all_results.extend(chunk_results)
+        except Exception as e:
+            print(e)
+            all_results.extend([np.nan] * len(chunk))
+            continue
+
+    sampled_df["ai_written"] = all_results
+    sampled_df.to_csv("data/news/news_ai_written.csv", index=False)
+
+
+def check_if_ai_written_reddit():
+    df = pd.read_csv("data/reddit/filtered_comments.csv")
+
+    # for each month and year, sample 10% of the data
+    sampled_df = (
+        df.groupby(["year", "month"])
+        .apply(lambda x: x.sample(frac=0.1, random_state=42))
+        .reset_index(drop=True)
+    )
+
+    all_texts = sampled_df["body"].tolist()
+
+    chunk_size = 32
+    chunks = [
+        all_texts[i : min(i + chunk_size, len(all_texts))]
+        for i in range(0, len(all_texts), chunk_size)
+    ]
+
+    bino = Binoculars(DEVICE_1="cuda:0", DEVICE_2="cuda:1")
+
+    all_results = []
+
+    for chunk in tqdm(chunks, desc="Processing chunks"):
+        try:
+            chunk_results = bino.compute_score(chunk)
+            all_results.extend(chunk_results)
+        except Exception as e:
+            print(e)
+            all_results.extend([np.nan] * len(chunk))
+            continue
+
+    sampled_df["ai_written"] = all_results
+    sampled_df.to_csv("data/reddit/reddit_ai_written.csv", index=False)
+
+
 def check_if_ai_written_papers():
 
-    # Use a pipeline as a high-level helper
-    from transformers import pipeline
+    bino = Binoculars(DEVICE_1="cuda:0", DEVICE_2="cuda:1")
 
-    pipe = pipeline(
-        "text-classification", model="PirateXX/AI-Content-Detector", device=1
-    )
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
     df["final_date"] = pd.to_datetime(df["update_date"])
     df["year"] = df["final_date"].dt.year
     df["month"] = df["final_date"].dt.month
 
     all_texts = df["abstract"].tolist()
+
+    # Split texts into 64 chunks
+    chunk_size = 32
+    chunks = [
+        all_texts[i : min(i + chunk_size, len(all_texts))]
+        for i in range(0, len(all_texts), chunk_size)
+    ]
+
+    # Process chunks and collect results
     all_results = []
-    for text in tqdm(all_texts, leave=False):
+    for chunk in tqdm(chunks, desc="Processing chunks"):
         try:
-            result = pipe(text)
-            all_results.append(result)
+            chunk_results = bino.compute_score(chunk)
+            all_results.extend(chunk_results)
         except Exception as e:
             print(e)
-            all_results.append(np.nan)
+            # If chunk fails, fill with NaN for each text in chunk
+            all_results.extend([np.nan] * len(chunk))
             continue
 
     df["ai_written"] = all_results
@@ -1402,6 +1491,10 @@ if __name__ == "__main__":
         check_for_grammatical_errors_news()
     elif args.process == "check_ai_written_papers":
         check_if_ai_written_papers()
+    elif args.process == "check_ai_written_reddit":
+        check_if_ai_written_reddit()
+    elif args.process == "check_ai_written_news":
+        check_if_ai_written_news()
     else:
         print("Invalid process argument")
         exit()

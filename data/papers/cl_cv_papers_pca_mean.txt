@@ -1,0 +1,259 @@
+PCA 1 (Explained variance: 0.316)
+mean_lex_functional_words_count    0.099262
+mean_lex_avg_word_length          -0.098698
+mean_lex_pos_PUNCT                -0.097674
+mean_lex_punctuation_count        -0.097643
+mean_lex_dep_punct                -0.097543
+--------------------------------------------------
+PCA 2 (Explained variance: 0.064)
+mean_lex_dep_acl             0.169267
+mean_lex_dep_aux            -0.165436
+mean_liwc_health             0.154710
+mean_voc_type_token_ratio    0.154232
+mean_lex_dep_advmod         -0.152361
+--------------------------------------------------
+PCA 3 (Explained variance: 0.053)
+mean_liwc_social     0.222838
+mean_liwc_percept   -0.191511
+mean_liwc_see       -0.184985
+mean_liwc_pronoun    0.178568
+mean_liwc_ppron      0.178164
+--------------------------------------------------
+PCA 4 (Explained variance: 0.023)
+mean_liwc_we                   0.158945
+mean_lex_functional_word_up   -0.156063
+mean_lex_dep_parataxis        -0.153757
+mean_liwc_ingest              -0.153179
+mean_liwc_ppron                0.152401
+--------------------------------------------------
+PCA 5 (Explained variance: 0.022)
+mean_lex_functional_word_our        0.234254
+mean_lex_functional_word_less       0.174590
+mean_lex_dep_csubjpass              0.163546
+mean_lex_functional_word_nothing    0.161751
+mean_lex_avg_sent_length_by_word   -0.156012
+--------------------------------------------------
+PCA 6 (Explained variance: 0.021)
+mean_lex_functional_word_somebody     0.238953
+mean_liwc_you                         0.196905
+mean_lex_functional_word_everybody    0.194328
+mean_liwc_i                           0.172766
+mean_lex_functional_word_before       0.166142
+--------------------------------------------------
+PCA 7 (Explained variance: 0.020)
+mean_liwc_hear                 0.179986
+mean_lex_functional_word_my   -0.174329
+mean_lex_functional_word_am   -0.169275
+mean_lex_ner_TIME             -0.161068
+mean_lex_dep_meta              0.149231
+--------------------------------------------------
+PCA 8 (Explained variance: 0.019)
+mean_lex_functional_word_beside      0.194661
+mean_liwc_conj                      -0.169580
+mean_lex_pos_SYM                    -0.161954
+mean_lex_functional_word_although    0.161766
+mean_lex_ner_EVENT                   0.160556
+--------------------------------------------------
+PCA 9 (Explained variance: 0.018)
+mean_lex_functional_word_someone    0.197364
+mean_lex_functional_word_those      0.188033
+mean_lex_ner_FAC                   -0.174579
+mean_liwc_family                   -0.172508
+mean_lex_functional_word_down       0.163231
+--------------------------------------------------
+PCA 10 (Explained variance: 0.018)
+mean_lex_functional_word_following    0.193326
+mean_lex_ner_CARDINAL                 0.186538
+mean_lex_ner_FAC                     -0.182251
+mean_lex_functional_word_till         0.176220
+mean_lex_functional_word_whom         0.156558
+--------------------------------------------------
+PCA 11 (Explained variance: 0.016)
+mean_lex_functional_word_you       0.221714
+mean_lex_functional_word_my        0.202111
+mean_lex_dep_nmod                 -0.178077
+mean_lex_ner_LAW                  -0.175835
+mean_lex_functional_word_should   -0.175463
+--------------------------------------------------
+PCA 12 (Explained variance: 0.015)
+mean_lex_functional_word_your       0.195499
+mean_liwc_time                     -0.184267
+mean_lex_avg_sent_length_by_word   -0.162054
+mean_lex_dep_prt                    0.158466
+mean_lex_functional_word_as         0.151736
+--------------------------------------------------
+PCA 13 (Explained variance: 0.015)
+mean_lex_functional_word_whose       0.173627
+mean_lex_functional_word_opposite    0.163970
+mean_lex_functional_word_onto        0.160544
+mean_lex_functional_word_below       0.158705
+mean_lex_functional_word_everyone    0.156633
+--------------------------------------------------
+PCA 14 (Explained variance: 0.014)
+mean_lex_functional_word_past       0.205666
+mean_liwc_time                      0.186724
+mean_lex_functional_word_towards   -0.179357
+mean_lex_functional_word_must       0.159262
+mean_lex_functional_word_beside     0.154898
+--------------------------------------------------
+PCA 15 (Explained variance: 0.013)
+mean_lex_dep_intj                0.211418
+mean_liwc_affect                -0.182732
+mean_lex_functional_word_such   -0.182242
+mean_lex_functional_word_none   -0.175762
+mean_lex_functional_word_you     0.162112
+--------------------------------------------------
+PCA 16 (Explained variance: 0.013)
+mean_lex_functional_word_nor         0.172419
+mean_lex_functional_word_whatever    0.168235
+mean_lex_functional_word_neither     0.167561
+mean_lex_functional_word_another     0.164444
+mean_lex_functional_word_around     -0.160097
+--------------------------------------------------
+PCA 17 (Explained variance: 0.013)
+mean_liwc_death                  0.245176
+mean_lex_ner_PERCENT             0.195701
+mean_lex_functional_word_down   -0.174599
+mean_lex_ner_PRODUCT             0.169948
+mean_lex_functional_word_me     -0.150672
+--------------------------------------------------
+PCA 18 (Explained variance: 0.013)
+mean_lex_ner_EVENT                  0.233313
+mean_lex_functional_word_unlike    -0.200229
+mean_lex_functional_word_behind     0.174518
+mean_lex_functional_word_without    0.168045
+mean_lex_functional_word_up        -0.166518
+--------------------------------------------------
+PCA 19 (Explained variance: 0.012)
+mean_lex_functional_word_off     0.210268
+mean_lex_functional_word_per     0.171193
+mean_lex_functional_word_them   -0.170415
+mean_lex_ner_WORK_OF_ART        -0.170077
+mean_lex_dep_meta               -0.168698
+--------------------------------------------------
+PCA 20 (Explained variance: 0.012)
+mean_lex_functional_word_her     0.174496
+mean_lex_functional_word_both    0.169924
+mean_liwc_death                 -0.151856
+mean_lex_dep_intj               -0.143616
+mean_lex_functional_word_if     -0.142272
+--------------------------------------------------
+PCA 21 (Explained variance: 0.011)
+mean_lex_pos_INTJ                  0.301352
+mean_lex_dep_intj                  0.199054
+mean_lex_functional_word_when      0.176882
+mean_lex_functional_word_though    0.172267
+mean_lex_functional_word_yes       0.169496
+--------------------------------------------------
+PCA 22 (Explained variance: 0.011)
+mean_lex_dep_predet                   0.213961
+mean_liwc_money                       0.205342
+mean_lex_ner_WORK_OF_ART              0.173265
+mean_lex_functional_word_regarding   -0.167839
+mean_lex_functional_word_whose       -0.163976
+--------------------------------------------------
+PCA 23 (Explained variance: 0.010)
+mean_lex_functional_word_me          0.202289
+mean_lex_functional_word_unless      0.200874
+mean_lex_functional_word_although   -0.169766
+mean_lex_pos_X                      -0.168060
+mean_lex_functional_word_am         -0.163372
+--------------------------------------------------
+PCA 24 (Explained variance: 0.010)
+mean_lex_functional_word_am        0.171630
+mean_liwc_shehe                   -0.161529
+mean_liwc_affect                   0.156801
+mean_lex_dep_quantmod             -0.152899
+mean_lex_functional_word_unlike   -0.149955
+--------------------------------------------------
+PCA 25 (Explained variance: 0.010)
+mean_lex_functional_word_i          0.251481
+mean_lex_functional_word_my         0.193880
+mean_lex_functional_word_do        -0.158555
+mean_lex_functional_word_anybody   -0.158551
+mean_lex_functional_word_they       0.151512
+--------------------------------------------------
+PCA 26 (Explained variance: 0.010)
+mean_lex_functional_word_either    0.172741
+mean_lex_dep_ROOT                 -0.170584
+mean_lex_functional_word_or        0.167841
+mean_lex_functional_word_she       0.164930
+mean_liwc_death                   -0.161813
+--------------------------------------------------
+PCA 27 (Explained variance: 0.009)
+mean_lex_functional_word_few         0.188607
+mean_lex_ner_LANGUAGE                0.167665
+mean_lex_functional_word_plenty      0.167269
+mean_lex_functional_word_everyone   -0.157156
+mean_lex_functional_word_yes         0.149552
+--------------------------------------------------
+PCA 28 (Explained variance: 0.009)
+mean_lex_functional_word_both      0.182595
+mean_lex_dep_csubjpass            -0.179653
+mean_lex_functional_word_unless    0.166936
+mean_lex_ner_WORK_OF_ART           0.163488
+mean_lex_ner_TIME                 -0.153862
+--------------------------------------------------
+PCA 29 (Explained variance: 0.009)
+mean_lex_functional_word_who          0.199431
+mean_liwc_humans                      0.179929
+mean_lex_functional_word_regarding    0.170492
+mean_lex_functional_word_past        -0.167217
+mean_lex_functional_word_worth       -0.164900
+--------------------------------------------------
+PCA 30 (Explained variance: 0.008)
+mean_lex_functional_word_cos        0.245780
+mean_liwc_humans                   -0.169193
+mean_lex_functional_word_about     -0.164513
+mean_lex_functional_word_anybody   -0.150375
+mean_liwc_family                    0.144688
+--------------------------------------------------
+PCA 31 (Explained variance: 0.008)
+mean_lex_functional_word_neither    0.201746
+mean_lex_functional_word_her        0.199939
+mean_lex_functional_word_what       0.171242
+mean_lex_dep_prt                   -0.160635
+mean_lex_functional_word_below      0.154556
+--------------------------------------------------
+PCA 32 (Explained variance: 0.008)
+mean_lex_functional_word_none    0.192316
+mean_lex_functional_word_who     0.191841
+mean_lex_functional_word_no     -0.166554
+mean_lex_functional_word_any     0.165086
+mean_liwc_death                 -0.154293
+--------------------------------------------------
+PCA 33 (Explained variance: 0.008)
+mean_lex_functional_word_down     0.215231
+mean_lex_dep_prt                 -0.202900
+mean_lex_functional_word_until    0.185106
+mean_lex_functional_word_since    0.172306
+mean_liwc_future                  0.162835
+--------------------------------------------------
+PCA 34 (Explained variance: 0.007)
+mean_lex_functional_word_him     0.244287
+mean_lex_functional_word_with   -0.210785
+mean_lex_functional_word_upon   -0.175754
+mean_lex_functional_word_any    -0.155077
+mean_liwc_friend                -0.147001
+--------------------------------------------------
+PCA 35 (Explained variance: 0.007)
+mean_lex_functional_word_inside    0.195082
+mean_lex_functional_word_into      0.151230
+mean_lex_functional_word_at        0.139853
+mean_lex_functional_word_him       0.139685
+mean_lex_ner_GPE                   0.136859
+--------------------------------------------------
+PCA 36 (Explained variance: 0.007)
+mean_lex_functional_word_he            0.210647
+mean_lex_functional_word_more          0.176730
+mean_lex_dep_predet                   -0.153624
+mean_lex_functional_word_everything    0.153608
+mean_lex_functional_word_regarding     0.150592
+--------------------------------------------------
+PCA 37 (Explained variance: 0.007)
+mean_lex_functional_word_cos         0.209712
+mean_lex_functional_word_although    0.180751
+mean_lex_functional_word_am          0.177507
+mean_lex_functional_word_none       -0.168855
+mean_lex_functional_word_whatever   -0.167939
+--------------------------------------------------
