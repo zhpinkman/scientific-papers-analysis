@@ -1,5 +1,6 @@
 myenv/*
 data/news/news_features.csv
+data/news/news_data.csv
 data/news/news_n_gram_similarities.csv
 data/news/news_n_gram_similarities.npy
 data/news/[tagged-zip]patchData.news.json

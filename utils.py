@@ -624,16 +624,13 @@ def SimpsonsIndex(text):
 
 def compute_avg_dependency_link_length(text):
     doc = nlp(text)
-    words_to_indices = {token.text: token.i for token in doc}
     link_lengths = []
     for sent in doc.sents:
         sent_link_lengths = []
         for token in sent:
             if token.dep_ != "ROOT":
                 head = token.head
-                sent_link_lengths.append(
-                    abs(words_to_indices[head.text] - words_to_indices[token.text])
-                )
+                sent_link_lengths.append(abs(head.i - token.i))
         if sent_link_lengths:  # Only append if sentence had any links
             link_lengths.append(np.mean(sent_link_lengths))
     return np.mean(link_lengths)
@@ -844,6 +841,8 @@ def FeatureExtration(text):
 def compute_all_features_for_df(df, text_column):
     features = []
     # remove rows that are empty
+    embed()
+    exit()
     df = df.dropna(subset=[text_column])
     # convert the text_column to string
     df[text_column] = df[text_column].astype(str)
@@ -876,10 +875,14 @@ def compute_all_features_for_df(df, text_column):
     return features_df
 
 
-def compute_similarities_based_on_features(df, features_df, year_col, month_col):
+def compute_similarities_based_on_features(features_df, year_col, month_col):
 
     grouped = features_df.groupby([year_col, month_col])
-    features_columns = [col for col in features_df.columns if col not in df.columns]
+    features_columns = [
+        col
+        for col in features_df.columns
+        if (col.startswith("voc_") or col.startswith("lex_") or col.startswith("liwc_"))
+    ]
 
     months = []
     years = []
@@ -915,9 +918,13 @@ def process_reddit_for_features():
 
     # Compute similarities based on features
     similarities_df = compute_similarities_based_on_features(
-        df, features_df, "year", "month"
+        features_df, "year", "month"
     )
     similarities_df.to_csv("data/reddit/reddit_similarities.csv", index=False)
+    clean_similarities_df = clean_similarities(similarities_df)
+    clean_similarities_df.to_csv(
+        "data/reddit/reddit_clean_similarities.csv", index=False
+    )
 
 
 import language_tool_python
@@ -961,6 +968,32 @@ def check_for_grammatical_errors_reddit():
     df.to_csv("data/reddit/reddit_errors.csv", index=False)
 
 
+def cache_news_data():
+    with open("data/news/[tagged-zip]patchData.news.json") as f:
+        data = json.load(f)
+        f.close()
+
+    # use beautiful soup to only get the content of the texts
+    texts = [
+        BeautifulSoup(d["body"], "html.parser").get_text()
+        for d in tqdm(data, leave=False)
+    ]
+
+    update_times_days = [int(d["updated"][8:10]) for d in data]
+    update_times_months = [int(d["updated"][5:7]) for d in data]
+    update_times_years = [int(d["updated"][:4]) for d in data]
+
+    df = pd.DataFrame(
+        {
+            "text": texts,
+            "year": update_times_years,
+            "month": update_times_months,
+            "day": update_times_days,
+        }
+    )
+    df.to_csv("data/news/news_data.csv", index=False)
+
+
 def check_if_ai_written_news():
     with open("data/news/[tagged-zip]patchData.news.json") as f:
         data = json.load(f)
@@ -972,11 +1005,17 @@ def check_if_ai_written_news():
         for d in tqdm(data, leave=False)
     ]
 
+    update_times_days = [int(d["updated"][8:10]) for d in data]
     update_times_months = [int(d["updated"][5:7]) for d in data]
     update_times_years = [int(d["updated"][:4]) for d in data]
 
     df = pd.DataFrame(
-        {"text": texts, "year": update_times_years, "month": update_times_months}
+        {
+            "text": texts,
+            "year": update_times_years,
+            "month": update_times_months,
+            "day": update_times_days,
+        }
     )
 
     sampled_df = (
@@ -1144,6 +1183,21 @@ def check_for_grammatical_errors_news():
     df.to_csv("data/news/news_errors.csv", index=False)
 
 
+def clean_similarities(data):
+    data["year"] = data["year"].astype(float).astype(int)
+    data["month"] = data["month"].astype(float).astype(int)
+
+    # only keep the rows with year >= 2018
+    data = data[data["year"] >= 2018]
+
+    # sort the data by year and month
+    # Fill NaN values with mean of each column
+    data = data.fillna(data.mean())
+    data = data.set_index(["year", "month"]).sort_index().reset_index()
+
+    return data
+
+
 @profile
 def process_papers_for_features():
     df = pd.read_csv("data/papers/cl_cv_papers.csv")
@@ -1155,9 +1209,13 @@ def process_papers_for_features():
 
     # Compute similarities based on features
     similarities_df = compute_similarities_based_on_features(
-        df, features_df, "year", "month"
+        features_df, "year", "month"
     )
     similarities_df.to_csv("data/papers/cl_cv_papers_similarities.csv", index=False)
+    clean_similarities_df = clean_similarities(similarities_df)
+    clean_similarities_df.to_csv(
+        "data/papers/cl_cv_papers_clean_similarities.csv", index=False
+    )
 
 
 @profile
@@ -1172,11 +1230,17 @@ def process_news_for_features():
         for d in tqdm(data, leave=False)
     ]
 
+    update_times_days = [int(d["updated"][8:10]) for d in data]
     update_times_months = [int(d["updated"][5:7]) for d in data]
     update_times_years = [int(d["updated"][:4]) for d in data]
 
     df = pd.DataFrame(
-        {"text": texts, "year": update_times_years, "month": update_times_months}
+        {
+            "text": texts,
+            "year": update_times_years,
+            "month": update_times_months,
+            "day": update_times_days,
+        }
     )
     # from each (year, month), take 1 / 4 of the data
     df = (
@@ -1190,9 +1254,11 @@ def process_news_for_features():
 
     # Compute similarities based on features
     similarities_df = compute_similarities_based_on_features(
-        df, features_df, "year", "month"
+        features_df, "year", "month"
     )
     similarities_df.to_csv("data/news/news_similarities.csv", index=False)
+    clean_similarities_df = clean_similarities(similarities_df)
+    clean_similarities_df.to_csv("data/news/news_clean_similarities.csv", index=False)
 
 
 def test_process_papers_for_features():
