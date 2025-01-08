@@ -33,3 +33,4 @@ data/papers/cl_cv_papers_errors.csv
 data/papers/papers_n_gram_similarities.csv
 data/papers/papers_n_gram_similarities.npy
 data/reddit/reddit_errors.csv
+data/news/news_data.csv
