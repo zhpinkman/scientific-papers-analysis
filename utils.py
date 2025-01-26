@@ -907,14 +907,18 @@ def compute_similarities_based_on_features(features_df, year_col, month_col):
 
 
 @profile
-def process_reddit_for_features():
-    df = pd.read_csv("data/reddit/filtered_comments.csv")
+def process_reddit_for_features(skip_to_similarity=False):
+    if not skip_to_similarity:
+        df = pd.read_csv("data/reddit/filtered_comments.csv")
 
-    # grouped = df.groupby([df["year"], df["month"]])
-    # text_groups = [(name, group["body"].tolist()) for name, group in grouped]
+        # grouped = df.groupby([df["year"], df["month"]])
+        # text_groups = [(name, group["body"].tolist()) for name, group in grouped]
 
-    features_df = compute_all_features_for_df(df, "body")
-    features_df.to_csv("data/reddit/reddit_features.csv", index=False)
+        features_df = compute_all_features_for_df(df, "body")
+        features_df.to_csv("data/reddit/reddit_features.csv", index=False)
+
+    else:
+        features_df = pd.read_csv("data/reddit/reddit_features.csv")
 
     # Compute similarities based on features
     similarities_df = compute_similarities_based_on_features(
@@ -1199,13 +1203,16 @@ def clean_similarities(data):
 
 
 @profile
-def process_papers_for_features():
-    df = pd.read_csv("data/papers/cl_cv_papers.csv")
-    df["final_date"] = pd.to_datetime(df["update_date"])
-    df["year"] = df["final_date"].dt.year
-    df["month"] = df["final_date"].dt.month
-    features_df = compute_all_features_for_df(df, "abstract")
-    features_df.to_csv("data/papers/cl_cv_papers_features.csv", index=False)
+def process_papers_for_features(skip_to_similarity=False):
+    if not skip_to_similarity:
+        df = pd.read_csv("data/papers/cl_cv_papers.csv")
+        df["final_date"] = pd.to_datetime(df["update_date"])
+        df["year"] = df["final_date"].dt.year
+        df["month"] = df["final_date"].dt.month
+        features_df = compute_all_features_for_df(df, "abstract")
+        features_df.to_csv("data/papers/cl_cv_papers_features.csv", index=False)
+    else:
+        features_df = pd.read_csv("data/papers/cl_cv_papers_features.csv")
 
     # Compute similarities based on features
     similarities_df = compute_similarities_based_on_features(
@@ -1219,38 +1226,41 @@ def process_papers_for_features():
 
 
 @profile
-def process_news_for_features():
-    with open("data/news/[tagged-zip]patchData.news.json") as f:
-        data = json.load(f)
-        f.close()
+def process_news_for_features(skip_to_similarity=False):
+    if not skip_to_similarity:
+        with open("data/news/[tagged-zip]patchData.news.json") as f:
+            data = json.load(f)
+            f.close()
 
-    # use beautiful soup to only get the content of the texts
-    texts = [
-        BeautifulSoup(d["body"], "html.parser").get_text()
-        for d in tqdm(data, leave=False)
-    ]
+        # use beautiful soup to only get the content of the texts
+        texts = [
+            BeautifulSoup(d["body"], "html.parser").get_text()
+            for d in tqdm(data, leave=False)
+        ]
 
-    update_times_days = [int(d["updated"][8:10]) for d in data]
-    update_times_months = [int(d["updated"][5:7]) for d in data]
-    update_times_years = [int(d["updated"][:4]) for d in data]
+        update_times_days = [int(d["updated"][8:10]) for d in data]
+        update_times_months = [int(d["updated"][5:7]) for d in data]
+        update_times_years = [int(d["updated"][:4]) for d in data]
 
-    df = pd.DataFrame(
-        {
-            "text": texts,
-            "year": update_times_years,
-            "month": update_times_months,
-            "day": update_times_days,
-        }
-    )
-    # from each (year, month), take 1 / 4 of the data
-    df = (
-        df.groupby(["year", "month"])
-        .apply(lambda x: x.sample(frac=0.25, replace=False, random_state=42))
-        .reset_index(drop=True)
-    )
+        df = pd.DataFrame(
+            {
+                "text": texts,
+                "year": update_times_years,
+                "month": update_times_months,
+                "day": update_times_days,
+            }
+        )
+        # from each (year, month), take 1 / 4 of the data
+        df = (
+            df.groupby(["year", "month"])
+            .apply(lambda x: x.sample(frac=0.25, replace=False, random_state=42))
+            .reset_index(drop=True)
+        )
 
-    features_df = compute_all_features_for_df(df, "text")
-    features_df.to_csv("data/news/news_features.csv", index=False)
+        features_df = compute_all_features_for_df(df, "text")
+        features_df.to_csv("data/news/news_features.csv", index=False)
+    else:
+        features_df = pd.read_csv("data/news/news_features.csv")
 
     # Compute similarities based on features
     similarities_df = compute_similarities_based_on_features(
@@ -1526,21 +1536,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "--process", type=str, required=True, help="process papers for features"
     )
+    parser.add_argument(
+        "--skip_to_similarity",
+        action="store_true",
+        help="skip to similarity and don't recompute features",
+    )
 
     args = parser.parse_args()
 
     if args.process == "papers_featurization":
-        process_papers_for_features()
+        process_papers_for_features(args.skip_to_similarity)
     elif args.process == "papers_ngram_sim":
         process_papers_n_gram_similarities_per_month()
     elif args.process == "news_featurization":
-        process_news_for_features()
+        process_news_for_features(args.skip_to_similarity)
     elif args.process == "news_ngram_sim":
         process_news_n_gram_similarities_per_month()
     elif args.process == "reddit_ngram_sim":
         process_reddit_n_gram_similarities_per_month()
     elif args.process == "reddit_featurization":
-        process_reddit_for_features()
+        process_reddit_for_features(args.skip_to_similarity)
     elif args.process == "test_papers_featurization":
         test_process_papers_for_features()
     elif args.process == "test_syntactical_information":
